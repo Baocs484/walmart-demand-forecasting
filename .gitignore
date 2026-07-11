@@ -1,0 +1,62 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+eggs/
+*.egg
+
+# Virtual Environment
+demand_forecasting_env/
+scripts/demand_forecasting_env/
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Data (large files)
+data/raw/*.csv
+data/processed/*.csv
+data/sample/*.csv
+
+# Trained model artifacts (large binaries) - root-level only, NOT src/models
+/models/
+
+# Results (generated)
+results/plots/*.html
+results/plots/*.png
+results/visualizations/*.png
+results/predictions/*.csv
+results/inventory/*.csv
+results/inventory/*.xlsx
+results/model_comparison.csv
+results/cv_results.csv
+results/runs.jsonl
+results/dashboard.html
+results/model_report.html
+results/reports/*.xlsx
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Logs
+*.log
+
+# Misc
+.env
+.agents/
+.claude/

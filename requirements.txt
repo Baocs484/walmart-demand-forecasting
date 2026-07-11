@@ -1,0 +1,32 @@
+# requirements.txt - CẬP NHẬT
+
+# Core Data Science
+numpy>=1.21.0
+pandas>=1.3.0
+scikit-learn>=1.0.0
+
+# Machine Learning
+xgboost>=1.5.0
+
+# Machine Learning - Optional (Uncomment to install)
+lightgbm>=3.3.0
+catboost>=1.0.0
+
+# Visualization
+matplotlib>=3.4.0
+seaborn>=0.11.0
+plotly>=5.0.0
+kaleido>=0.2.1
+
+# Optimization
+scipy>=1.7.0
+
+# Utilities
+joblib>=1.0.0
+pyyaml>=6.0
+
+# Excel export
+openpyxl>=3.0.0
+
+# Interactive app
+streamlit>=1.30.0

@@ -1,0 +1,38 @@
+# Central configuration - business & pipeline parameters.
+# Edit here instead of touching source code.
+
+data:
+  processed_path: data/processed/walmart_clean.csv
+
+split:
+  train_ratio: 0.70          # time-based split by unique dates
+  val_ratio: 0.15            # test gets the remainder (0.15)
+
+clustering:
+  n_clusters: 5
+
+metrics:
+  holiday_weight: 5          # WMAE weight for holiday weeks (Kaggle standard)
+
+inventory:
+  min_weeks: 4               # series with fewer test weeks are excluded from restock list
+  lead_time_weeks: 1
+  # Service-level z-scores per ABC-XYZ class
+  z_scores:
+    AX: 2.576   # 99.5%
+    AY: 2.33    # 99.0%
+    AZ: 2.05    # 98.0%
+    BX: 2.17    # 98.5%
+    BY: 2.05    # 98.0%
+    BZ: 1.88    # 97.0%
+    CX: 1.88    # 97.0%
+    CY: 1.645   # 95.0%
+    CZ: 1.28    # 90.0%
+  default_z: 1.645
+  costs:
+    stockout_penalty: 50     # lost-revenue multiplier per $ short
+    unit_cost: 10
+    holding_rate: 0.1        # weekly holding cost as fraction of unit cost
+
+forecast:
+  horizon_weeks: 4           # default recursive forecast horizon
