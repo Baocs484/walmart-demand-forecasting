@@ -115,4 +115,4 @@ python -m pytest tests/ -v       # test suite
 ## 📝 Credits
 
 - Dataset: [Walmart Store Sales Forecasting (Kaggle)](https://www.kaggle.com/c/walmart-recruiting-store-sales-forecasting)
-- Authors: 522H0076, 522H0111
+- Authors: Lê Gia Bảo
