@@ -2,22 +2,21 @@
 """
 Human-facing outputs for Data Analysis / Data Science - 3 deliverables:
 
-1. build_dashboard()     -> results/dashboard.html
-   BUSINESS ANALYTICS report: KPIs with context, auto-generated insights,
-   sales trend, error attribution, ABC-XYZ matrix, restock priorities.
-
-2. build_model_report()  -> results/model_report.html
-   MODEL DIAGNOSTICS for data scientists: config + data split, residual
-   analysis, weekly/dept/holiday error, model comparison, cross-validation,
-   run history, feature importance.
-
+1. build_dashboard()     -> results/dashboard.html   (business analytics)
+2. build_model_report()  -> results/model_report.html (model diagnostics)
 3. build_excel_report()  -> results/reports/forecast_report.xlsx
-   Formatted multi-sheet Excel workbook for detailed analysis.
 
-Both HTML pages are self-contained (work offline) and cross-linked.
+Design rules applied (so the pages stay clean if you edit them):
+- Chart titles/subtitles live in the card's HTML, NOT inside Plotly - they
+  wrap on narrow screens and free the strip above the plot for the legend
+  (top-left) and filter dropdown (top-right), so nothing overlaps.
+- One label rule: annotate selectively (a single subtitle note), never a
+  text label on every mark.
+- All half-width charts share one height; sections are labeled groups,
+  not an unbroken wall of charts.
 
 NOTE on units: Weekly_Sales in the Walmart dataset is measured in DOLLARS,
-not item counts - all quantities here are therefore presented as $ value.
+not item counts - all quantities are presented as $ value.
 """
 
 import numpy as np
@@ -49,24 +48,23 @@ STATUS = {'good': '#0ca30c', 'warning': '#fab219', 'serious': '#ec835a', 'critic
 
 FONT = 'system-ui, -apple-system, "Segoe UI", sans-serif'
 
+H_HALF = 340   # uniform height for half-width charts
+H_FULL = 380   # full-width charts
+
 
 # ==========================================================================
 # SHARED HELPERS
 # ==========================================================================
 
-def _base_layout(fig, title, subtitle=None, height=360):
-    title_text = title
-    if subtitle:
-        title_text = f"{title}<br><span style='font-size:12px;color:{MUTED}'>{subtitle}</span>"
+def _base_layout(fig, height=H_HALF, top=28):
+    """No in-plot title: titles live in the card HTML above the chart."""
     fig.update_layout(
-        title=dict(text=title_text, font=dict(size=15, color=INK, family=FONT), x=0.02, xanchor='left'),
         paper_bgcolor=SURFACE, plot_bgcolor=SURFACE,
         font=dict(family=FONT, size=12, color=INK_2),
-        margin=dict(l=56, r=16, t=64 if subtitle else 52, b=44),
+        margin=dict(l=52, r=12, t=top, b=40),
         height=height,
         hovermode='x unified',
-        legend=dict(orientation='h', yanchor='bottom', y=1.0, xanchor='right', x=1.0,
-                    font=dict(size=11, color=INK_2)),
+        showlegend=False,
         xaxis=dict(gridcolor=GRID, linecolor=BASELINE, zeroline=False,
                    tickfont=dict(color=MUTED, size=11)),
         yaxis=dict(gridcolor=GRID, linecolor=BASELINE, zeroline=False,
@@ -83,6 +81,17 @@ def _fig_html(fig, include_js=False):
     )
 
 
+def _card(title, subtitle, fig, size='half', include_js=False, note=None):
+    """Chart card: HTML title + subtitle (wrap on narrow screens), then plot."""
+    sub = f'<p>{subtitle}</p>' if subtitle else ''
+    note_html = f'<div class="note">{note}</div>' if note else ''
+    return f'''<div class="card{' full' if size == 'full' else ''}">
+      <div class="chead"><h2>{title}</h2>{sub}</div>
+      {_fig_html(fig, include_js)}
+      {note_html}
+    </div>'''
+
+
 def _kpi_card(label, value, sub='', tone=None):
     accent = f'border-left: 3px solid {STATUS[tone]};' if tone else ''
     sub_html = f'<div class="kpi-sub">{sub}</div>' if sub else ''
@@ -91,6 +100,10 @@ def _kpi_card(label, value, sub='', tone=None):
       <div class="kpi-value">{value}</div>
       {sub_html}
     </div>'''
+
+
+def _section(label, inner):
+    return f'<div class="section-label">{label}</div>\n<div class="grid">{inner}</div>'
 
 
 def _page_css():
@@ -109,8 +122,8 @@ def _page_css():
            background: {SURFACE}; display: inline-block; }}
   nav a:hover {{ border-color: {SERIES_1}; }}
   .section-label {{ font-size: 12px; font-weight: 600; letter-spacing: 0.08em;
-                    text-transform: uppercase; color: {MUTED}; margin: 26px 0 10px; }}
-  .kpis {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+                    text-transform: uppercase; color: {MUTED}; margin: 28px 0 10px; }}
+  .kpis {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
            gap: 12px; }}
   .kpi {{ background: {SURFACE}; border: 1px solid rgba(11,11,11,0.10);
           border-radius: 12px; padding: 14px 16px; }}
@@ -122,13 +135,16 @@ def _page_css():
                padding: 16px 20px; }}
   .insights h2 {{ font-size: 14px; font-weight: 650; margin-bottom: 8px; }}
   .insights li {{ font-size: 13.5px; color: {INK_2}; line-height: 1.65;
-                  margin-left: 18px; }}
+                  margin-left: 18px; margin-bottom: 4px; }}
   .insights b {{ color: {INK}; }}
   .grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }}
   .card {{ background: {SURFACE}; border: 1px solid rgba(11,11,11,0.10);
-           border-radius: 12px; padding: 6px; overflow: hidden; }}
+           border-radius: 12px; padding: 0 0 6px; overflow: hidden; }}
   .card.full {{ grid-column: 1 / -1; }}
-  .card h2 {{ font-size: 15px; font-weight: 650; padding: 12px 14px 2px; }}
+  .card .chead {{ padding: 14px 16px 4px; }}
+  .card .chead h2 {{ font-size: 15px; font-weight: 650; }}
+  .card .chead p {{ font-size: 12px; color: {MUTED}; margin-top: 3px; line-height: 1.5; }}
+  .card h2.plain {{ font-size: 15px; font-weight: 650; padding: 14px 16px 4px; }}
   .card .pad {{ padding: 8px 14px 14px; }}
   .tbl {{ width: 100%; border-collapse: collapse; font-size: 13px; }}
   .tbl th {{ text-align: left; color: {MUTED}; font-weight: 600; font-size: 12px;
@@ -141,7 +157,7 @@ def _page_css():
            border: 1px solid var(--c); border-radius: 99px; padding: 2px 10px;
            white-space: nowrap; }}
   .empty {{ color: {MUTED}; padding: 16px; }}
-  .note {{ font-size: 12px; color: {MUTED}; padding: 0 14px 12px; }}
+  .note {{ font-size: 12px; color: {MUTED}; padding: 4px 16px 8px; line-height: 1.5; }}
   footer {{ color: {MUTED}; font-size: 12px; margin: 26px 0 8px; line-height: 1.7; }}
   @media (max-width: 900px) {{ .grid {{ grid-template-columns: 1fr; }} }}
 '''
@@ -168,11 +184,16 @@ def _eval_df(eval_data):
     })
 
 
-def _add_holiday_markers(fig, df):
+def _add_holiday_lines(fig, df):
+    """Dotted verticals only - the meaning is explained ONCE in the subtitle."""
     for d in sorted(df.loc[df['IsHoliday'], 'Date'].unique()):
         fig.add_vline(x=d, line_width=1, line_dash='dot', line_color=STATUS['warning'])
-        fig.add_annotation(x=d, y=1.02, yref='paper', text='Holiday', showarrow=False,
-                           font=dict(size=10, color=MUTED))
+    return fig
+
+
+def _bar(fig):
+    """Common bar polish: labels never clipped."""
+    fig.update_traces(cliponaxis=False)
     return fig
 
 
@@ -203,13 +224,18 @@ def _chart_forecast_timeseries(df):
         vis[2 * i] = vis[2 * i + 1] = True
         buttons.append(dict(label=label, method='update', args=[{'visible': vis}]))
 
-    _base_layout(fig, 'Weekly sales: Actual vs Forecast',
-                 subtitle='Network total - use the dropdown to filter by store cluster', height=400)
-    _add_holiday_markers(fig, df)
+    _base_layout(fig, height=H_FULL, top=48)
+    _add_holiday_lines(fig, df)
+    # Freed strip above the plot: legend on the LEFT, filter on the RIGHT
     fig.update_layout(
+        showlegend=True,
+        legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='left', x=0,
+                    font=dict(size=11, color=INK_2)),
         updatemenus=[dict(
-            buttons=buttons, direction='down', x=1.0, xanchor='right', y=1.25, yanchor='top',
-            bgcolor=SURFACE, bordercolor=GRID, font=dict(size=11, color=INK_2))],
+            buttons=buttons, direction='down',
+            x=1.0, xanchor='right', y=1.18, yanchor='top',
+            bgcolor=SURFACE, bordercolor=GRID, font=dict(size=11, color=INK_2),
+            pad=dict(t=0, b=0))],
         yaxis_tickformat='~s', yaxis_tickprefix='$',
     )
     return fig
@@ -224,10 +250,9 @@ def _chart_error_by_cluster(df):
         textfont=dict(color=INK_2, size=11),
         hovertemplate='MAE: $%{y:,.0f}<extra></extra>', width=0.55,
     ))
-    _base_layout(fig, 'Forecast error (MAE) by store cluster',
-                 subtitle='Clusters from K-Means on size, type and volatility')
-    fig.update_layout(showlegend=False, yaxis_tickformat='~s', yaxis_tickprefix='$', hovermode='closest')
-    return fig
+    _base_layout(fig)
+    fig.update_layout(hovermode='closest', yaxis_tickformat='~s', yaxis_tickprefix='$')
+    return _bar(fig)
 
 
 def _chart_store_scatter(df):
@@ -236,16 +261,15 @@ def _chart_store_scatter(df):
 
     fig = go.Figure()
     fig.add_trace(go.Scatter(
-        x=[0, lim], y=[0, lim], mode='lines', name='Forecast = Actual',
+        x=[0, lim], y=[0, lim], mode='lines',
         line=dict(color=BASELINE, width=1, dash='dot'), hoverinfo='skip'))
     fig.add_trace(go.Scatter(
-        x=per_store['Actual'], y=per_store['Predicted'], mode='markers', name='Store',
+        x=per_store['Actual'], y=per_store['Predicted'], mode='markers',
         marker=dict(color=SERIES_1, size=9, opacity=0.85, line=dict(color=SURFACE, width=1)),
         customdata=per_store['Store'],
         hovertemplate='Store %{customdata}<br>Actual: $%{x:,.0f}<br>Forecast: $%{y:,.0f}<extra></extra>'))
 
-    _base_layout(fig, 'Total sales per store: Forecast vs Actual',
-                 subtitle='Points below the diagonal = store is under-forecast')
+    _base_layout(fig)
     fig.update_layout(
         hovermode='closest',
         xaxis=dict(title=dict(text='Actual ($)', font=dict(size=11, color=MUTED)), tickformat='~s'),
@@ -276,8 +300,7 @@ def _chart_abc_xyz(store_dept_full):
         hovertemplate='Class %{y} × %{x}<br>%{z} Store-Dept pairs · %{customdata}% of revenue<extra></extra>',
         showscale=False, xgap=2, ygap=2,
     ))
-    _base_layout(fig, 'ABC × XYZ matrix',
-                 subtitle='Store-Dept pairs and revenue share per cell - drives safety-stock levels')
+    _base_layout(fig)
     fig.update_layout(hovermode='closest', yaxis=dict(autorange='reversed'))
     return fig
 
@@ -295,12 +318,11 @@ def _chart_error_concentration(df, top_n=10):
         textfont=dict(color=INK_2, size=11),
         hovertemplate='%{y}: $%{x:,.0f} total error<extra></extra>',
     ))
-    _base_layout(fig, f'Top {top_n} departments by error contribution',
-                 subtitle='% of network-wide absolute error - where model improvements pay off most')
-    fig.update_layout(showlegend=False, hovermode='closest',
+    _base_layout(fig)
+    fig.update_layout(hovermode='closest',
                       xaxis_tickformat='~s', xaxis_tickprefix='$',
-                      margin=dict(l=90, r=50, t=64, b=40))
-    return fig
+                      margin=dict(l=76, r=48, t=28, b=40))
+    return _bar(fig)
 
 
 # ==========================================================================
@@ -321,10 +343,9 @@ def _chart_model_comparison(df_cmp):
                       else '%{x}: WMAE %{y:,.0f}<extra></extra>',
         width=0.6,
     ))
-    _base_layout(fig, 'Model comparison by WMAE',
-                 subtitle='Lower is better · dark bar = selected model')
-    fig.update_layout(showlegend=False, hovermode='closest')
-    return fig
+    _base_layout(fig)
+    fig.update_layout(hovermode='closest')
+    return _bar(fig)
 
 
 def _chart_train_time(df_cmp):
@@ -338,15 +359,13 @@ def _chart_train_time(df_cmp):
         textfont=dict(color=INK_2, size=11),
         hovertemplate='%{x}: %{y:.1f}s<extra></extra>', width=0.6,
     ))
-    _base_layout(fig, 'Training time',
-                 subtitle='Accuracy vs compute-cost trade-off')
-    fig.update_layout(showlegend=False, hovermode='closest')
-    return fig
+    _base_layout(fig)
+    fig.update_layout(hovermode='closest')
+    return _bar(fig)
 
 
 def _chart_residual_hist(df, clip=5000):
     resid = df['Actual'] - df['Predicted']
-    pct_outside = (resid.abs() > clip).mean() * 100
     clipped = resid.clip(-clip, clip)
 
     fig = go.Figure(go.Histogram(
@@ -356,12 +375,9 @@ def _chart_residual_hist(df, clip=5000):
     fig.add_vline(x=0, line_width=1, line_color=BASELINE)
     med = float(resid.median())
     fig.add_vline(x=med, line_width=1.5, line_dash='dash', line_color=STATUS['serious'])
-    fig.add_annotation(x=med, y=1.02, yref='paper', text=f'median {med:,.0f}',
-                       showarrow=False, font=dict(size=10, color=STATUS['serious']))
 
-    _base_layout(fig, 'Residual distribution (Actual − Forecast)',
-                 subtitle=f'Display clipped at ±{clip:,} ({pct_outside:.1f}% outside) · right skew = under-forecasting')
-    fig.update_layout(showlegend=False, hovermode='closest', bargap=0.05,
+    _base_layout(fig)
+    fig.update_layout(hovermode='closest', bargap=0.05,
                       xaxis_tickformat='~s', xaxis_tickprefix='$')
     return fig
 
@@ -370,13 +386,12 @@ def _chart_mae_by_week(df):
     g = (df.assign(abs_err=(df['Actual'] - df['Predicted']).abs())
            .groupby('Date')['abs_err'].mean().reset_index())
     fig = go.Figure(go.Scatter(
-        x=g['Date'], y=g['abs_err'], mode='lines+markers', name='MAE',
+        x=g['Date'], y=g['abs_err'], mode='lines+markers',
         line=dict(color=SERIES_1, width=2), marker=dict(size=6),
         hovertemplate='MAE: $%{y:,.0f}<extra></extra>'))
-    _base_layout(fig, 'Error (MAE) by test week',
-                 subtitle='Spot weeks where the model struggles - watch the holiday markers')
-    _add_holiday_markers(fig, df)
-    fig.update_layout(showlegend=False, yaxis_tickformat='~s', yaxis_tickprefix='$')
+    _base_layout(fig, height=H_FULL)
+    _add_holiday_lines(fig, df)
+    fig.update_layout(yaxis_tickformat='~s', yaxis_tickprefix='$')
     return fig
 
 
@@ -394,11 +409,9 @@ def _chart_holiday_error(df):
         customdata=g['size'], width=0.45,
         hovertemplate='%{x}<br>MAE: $%{y:,.0f} · %{customdata:,} observations<extra></extra>',
     ))
-    _base_layout(fig, 'MAE: holiday vs regular weeks',
-                 subtitle='WMAE weighs holiday errors 5x - the key segment to watch')
-    fig.update_layout(showlegend=False, hovermode='closest',
-                      yaxis_tickformat='~s', yaxis_tickprefix='$')
-    return fig
+    _base_layout(fig)
+    fig.update_layout(hovermode='closest', yaxis_tickformat='~s', yaxis_tickprefix='$')
+    return _bar(fig)
 
 
 def _chart_residual_vs_predicted(df, sample=8000):
@@ -410,9 +423,8 @@ def _chart_residual_vs_predicted(df, sample=8000):
         hovertemplate='Forecast: $%{x:,.0f}<br>Residual: $%{y:,.0f}<extra></extra>',
     ))
     fig.add_hline(y=0, line_width=1, line_color=BASELINE)
-    _base_layout(fig, 'Residual vs forecast level',
-                 subtitle=f'Random sample of {min(sample, len(df)):,} points · funnel shape = variance grows with scale')
-    fig.update_layout(showlegend=False, hovermode='closest',
+    _base_layout(fig)
+    fig.update_layout(hovermode='closest',
                       xaxis=dict(title=dict(text='Forecast value ($)', font=dict(size=11, color=MUTED)),
                                  tickformat='~s'),
                       yaxis=dict(title=dict(text='Residual ($)', font=dict(size=11, color=MUTED)),
@@ -420,7 +432,7 @@ def _chart_residual_vs_predicted(df, sample=8000):
     return fig
 
 
-def _chart_worst_depts(df, top_n=15):
+def _chart_worst_depts(df, top_n=10):
     g = (df.assign(abs_err=(df['Actual'] - df['Predicted']).abs())
            .groupby('Dept').agg(mae=('abs_err', 'mean'), n=('abs_err', 'size')))
     g = g[g['n'] >= 30].sort_values('mae', ascending=False).head(top_n)[::-1]
@@ -430,30 +442,27 @@ def _chart_worst_depts(df, top_n=15):
         customdata=g['n'],
         hovertemplate='%{y}<br>MAE: $%{x:,.0f} · %{customdata:,} observations<extra></extra>',
     ))
-    _base_layout(fig, f'Top {top_n} departments by MAE',
-                 subtitle='Departments with ≥30 test observations only', height=420)
-    fig.update_layout(showlegend=False, hovermode='closest',
+    _base_layout(fig)
+    fig.update_layout(hovermode='closest',
                       xaxis_tickformat='~s', xaxis_tickprefix='$',
-                      margin=dict(l=90, r=30, t=64, b=40))
-    return fig
+                      margin=dict(l=76, r=24, t=28, b=40))
+    return _bar(fig)
 
 
-def _chart_feature_importance(df_imp, model_name, top_n=20):
+def _chart_feature_importance(df_imp, model_name, top_n=15):
     top = df_imp.head(top_n).sort_values('Importance')
     fig = go.Figure(go.Bar(
         x=top['Importance'], y=top['Feature'], orientation='h',
         marker=dict(color=SEQ[3], cornerradius=4),
         hovertemplate='%{y}: %{x:,.0f}<extra></extra>',
     ))
-    _base_layout(fig, f'Top {top_n} feature importances ({model_name})',
-                 subtitle='Contribution of each feature to tree splits', height=520)
-    fig.update_layout(showlegend=False, hovermode='closest',
-                      margin=dict(l=190, r=16, t=64, b=40))
-    return fig
+    _base_layout(fig, height=440)
+    fig.update_layout(hovermode='closest',
+                      margin=dict(l=180, r=24, t=28, b=40))
+    return _bar(fig)
 
 
 def _chart_cv_results(df_cv):
-    """Rolling-origin CV: WMAE per fold, holiday-heavy folds highlighted."""
     df = df_cv.sort_values('Fold')
     colors = [STATUS['warning'] if h > 1 else SEQ[3] for h in df['Holiday_Weeks']]
     fig = go.Figure(go.Bar(
@@ -470,16 +479,12 @@ def _chart_cv_results(df_cv):
     ))
     mean_w = df['WMAE'].mean()
     fig.add_hline(y=mean_w, line_width=1.5, line_dash='dash', line_color=BASELINE)
-    fig.add_annotation(x=0.99, xref='paper', y=mean_w, text=f'mean {mean_w:,.0f}',
-                       showarrow=False, yshift=10, font=dict(size=10, color=MUTED))
-    _base_layout(fig, 'Rolling-origin cross-validation (WMAE per fold)',
-                 subtitle='Orange = fold with major holidays (Thanksgiving/Christmas) in the test window')
-    fig.update_layout(showlegend=False, hovermode='closest')
-    return fig
+    _base_layout(fig)
+    fig.update_layout(hovermode='closest')
+    return _bar(fig)
 
 
 def _chart_run_history(df_runs):
-    """Experiment tracker: WMAE across pipeline runs."""
     df = df_runs.reset_index(drop=True)
     fig = go.Figure(go.Scatter(
         x=list(range(1, len(df) + 1)), y=df['WMAE'],
@@ -489,9 +494,8 @@ def _chart_run_history(df_runs):
         hovertemplate='Run %{x}: WMAE %{y:,.0f}<br>%{customdata[0]}<br>'
                       '%{customdata[1]} (%{customdata[2]})<extra></extra>',
     ))
-    _base_layout(fig, 'WMAE across pipeline runs',
-                 subtitle='Lightweight experiment tracking from results/runs.jsonl')
-    fig.update_layout(showlegend=False, hovermode='closest',
+    _base_layout(fig)
+    fig.update_layout(hovermode='closest',
                       xaxis=dict(title=dict(text='Run #', font=dict(size=11, color=MUTED)),
                                  dtick=1))
     return fig
@@ -536,7 +540,6 @@ def _restock_table(detailed, n=10):
 
 
 def _build_insights(df, metrics, inventory):
-    """Auto-generated takeaways - what a senior analyst would flag first."""
     insights = []
     y, p = df['Actual'], df['Predicted']
     bias = (p.sum() / y.sum() - 1) * 100
@@ -627,7 +630,7 @@ def build_dashboard(eval_data, metrics, best_model_name, feature_importance_df=N
     kpis = [
         _kpi_card('Total sales (test window)', _fmt_money(y.sum() / 1e6, 1) + 'M',
                   f'{n_weeks} weeks · {df["Store"].nunique()} stores'),
-        _kpi_card('Forecast accuracy', f'{100 - wape:.1f}%', 'WAPE-based (1 − Σ|error|/Σsales)',
+        _kpi_card('Forecast accuracy', f'{100 - wape:.1f}%', '1 − Σ|error| / Σsales',
                   tone='good' if wape < 10 else 'warning'),
         _kpi_card('Total forecast bias', f'{bias:+.1f}%', 'negative = under-forecasting',
                   tone='good' if abs(bias) <= 2 else 'warning'),
@@ -644,33 +647,42 @@ def build_dashboard(eval_data, metrics, best_model_name, feature_importance_df=N
     insights_html = '<div class="insights"><h2>💡 Key takeaways</h2><ul>' + \
                     ''.join(f'<li>{s}</li>' for s in insights) + '</ul></div>'
 
-    charts = [('full', _fig_html(_chart_forecast_timeseries(df), include_js=True)),
-              ('half', _fig_html(_chart_error_by_cluster(df))),
-              ('half', _fig_html(_chart_store_scatter(df)))]
+    cards = [
+        _card('Weekly sales: Actual vs Forecast',
+              'Network total · dotted verticals mark holiday weeks · filter by store cluster (top right)',
+              _chart_forecast_timeseries(df), size='full', include_js=True),
+        _card('Forecast error (MAE) by store cluster',
+              'Clusters from K-Means on size, type and volatility',
+              _chart_error_by_cluster(df)),
+        _card('Total sales per store: Forecast vs Actual',
+              'Each dot is a store · below the diagonal = under-forecast',
+              _chart_store_scatter(df)),
+    ]
     if full is not None and len(full):
-        charts.append(('half', _fig_html(_chart_abc_xyz(full))))
-    charts.append(('half', _fig_html(_chart_error_concentration(df))))
+        cards.append(_card('ABC × XYZ inventory matrix',
+                           'Store-Dept pairs and revenue share per cell - drives safety-stock levels',
+                           _chart_abc_xyz(full)))
+    cards.append(_card('Error concentration by department',
+                       'Share of network-wide absolute error - where model improvements pay off most',
+                       _chart_error_concentration(df)))
     if comparison_results:
-        charts.append(('full', _fig_html(_chart_model_comparison(pd.DataFrame(comparison_results)))))
+        cards.append(_card('Model comparison by WMAE', 'Lower is better · dark bar = selected model',
+                           _chart_model_comparison(pd.DataFrame(comparison_results)), size='full'))
 
-    chart_html = '\n'.join(
-        f'<div class="card{" full" if size == "full" else ""}">{html}</div>' for size, html in charts)
+    table_card = f'''<div class="card full">
+      <h2 class="plain">Top restock priorities</h2>
+      <div class="pad">{_restock_table(detailed)}</div>
+      <div class="note">Series with ≥4 weeks of data and positive sales only. Values are in dollars
+        (the dataset has no unit prices). Full list: sheet "Restock_Priority" in forecast_report.xlsx</div>
+    </div>'''
 
     body = f'''
   <div class="section-label">Key metrics</div>
   <div class="kpis">{''.join(kpis)}</div>
   <div class="section-label">Insights</div>
   {insights_html}
-  <div class="section-label">Analysis</div>
-  <div class="grid">
-    {chart_html}
-    <div class="card full">
-      <h2>Top restock priorities</h2>
-      <div class="pad">{_restock_table(detailed)}</div>
-      <div class="note">Series with ≥4 weeks of data and positive sales only. Values are in dollars
-        (the dataset has no unit prices). Full list: sheet "Restock_Priority" in forecast_report.xlsx</div>
-    </div>
-  </div>'''
+  {_section('Forecast performance', ''.join(cards))}
+  {_section('Inventory actions', table_card)}'''
 
     footer = (f'Model: {best_model_name} · Test window: {period} · '
               f'WMAE = weighted MAE (holiday weeks ×5, Kaggle Walmart standard) · '
@@ -751,7 +763,7 @@ def build_model_report(eval_data, metrics, best_model_name, model_instance=None,
                            f'<td class="num">{n:,}</td></tr>')
 
     config_card = f'''<div class="card">
-      <h2>Model configuration — {best_model_name}</h2>
+      <h2 class="plain">Model configuration — {best_model_name}</h2>
       <div class="pad"><table class="tbl">
         <thead><tr><th>Parameter</th><th class="num">Value</th></tr></thead>
         <tbody>{info_rows or '<tr><td colspan="2" class="empty">No information</td></tr>'}</tbody>
@@ -760,7 +772,7 @@ def build_model_report(eval_data, metrics, best_model_name, model_instance=None,
         early stopping on validation · feature statistics fitted on train only (leak-free)</div>
     </div>'''
     split_card = f'''<div class="card">
-      <h2>Data split (time-based, 70/15/15)</h2>
+      <h2 class="plain">Data split (time-based, 70/15/15)</h2>
       <div class="pad"><table class="tbl">
         <thead><tr><th>Split</th><th class="num">Date range</th><th class="num">Rows</th></tr></thead>
         <tbody>{split_rows or '<tr><td colspan="3" class="empty">No information</td></tr>'}</tbody>
@@ -769,7 +781,47 @@ def build_model_report(eval_data, metrics, best_model_name, model_instance=None,
         so no future information reaches the model</div>
     </div>'''
 
-    # Model comparison: in-session results first, else last compare run's CSV
+    # ---- Section 1: error diagnostics ----
+    resid_pct_out = ((y - p).abs() > 5000).mean() * 100
+    diag_cards = [
+        _card('Error (MAE) by test week',
+              'Dotted verticals mark holiday weeks - spot where the model struggles',
+              _chart_mae_by_week(df), size='full', include_js=True),
+        _card('Residual distribution (Actual − Forecast)',
+              f'Clipped at ±$5,000 for display ({resid_pct_out:.1f}% outside) · '
+              f'dashed line = median · right skew = under-forecasting',
+              _chart_residual_hist(df)),
+        _card('Residual vs forecast level',
+              f'Random sample of {min(8000, len(df)):,} points · funnel shape = variance grows with scale',
+              _chart_residual_vs_predicted(df)),
+        _card('MAE: holiday vs regular weeks',
+              'WMAE weighs holiday errors 5× - the key segment to watch',
+              _chart_holiday_error(df)),
+        _card('Top 10 departments by MAE',
+              'Departments with ≥30 test observations only',
+              _chart_worst_depts(df)),
+    ]
+
+    # ---- Section 2: validation & experiments ----
+    val_cards = []
+    cv_path = Path('results/cv_results.csv')
+    if cv_path.exists():
+        try:
+            df_cv = pd.read_csv(cv_path)
+            if len(df_cv):
+                val_cards.append(_card(
+                    'Rolling-origin cross-validation (WMAE per fold)',
+                    'Orange = fold with major holidays (Thanksgiving/Christmas) in its test window · dashed line = mean',
+                    _chart_cv_results(df_cv)))
+        except Exception:
+            pass
+    df_runs = load_runs()
+    if len(df_runs) >= 2:
+        val_cards.append(_card('WMAE across pipeline runs',
+                               'Lightweight experiment tracking from results/runs.jsonl',
+                               _chart_run_history(df_runs)))
+
+    # ---- Section 3: model comparison ----
     df_cmp = None
     if comparison_results:
         df_cmp = pd.DataFrame(comparison_results)
@@ -780,55 +832,41 @@ def build_model_report(eval_data, metrics, best_model_name, model_instance=None,
                 df_cmp = pd.read_csv(cmp_path)
             except Exception:
                 pass
-
-    charts = [('full', _fig_html(_chart_mae_by_week(df), include_js=True)),
-              ('half', _fig_html(_chart_residual_hist(df))),
-              ('half', _fig_html(_chart_residual_vs_predicted(df))),
-              ('half', _fig_html(_chart_holiday_error(df))),
-              ('half', _fig_html(_chart_worst_depts(df)))]
-
-    # Rolling CV results (if validate.py has been run)
-    cv_path = Path('results/cv_results.csv')
-    if cv_path.exists():
-        try:
-            df_cv = pd.read_csv(cv_path)
-            if len(df_cv):
-                charts.append(('half', _fig_html(_chart_cv_results(df_cv))))
-        except Exception:
-            pass
-
-    # Run history (lightweight experiment tracking)
-    df_runs = load_runs()
-    if len(df_runs) >= 2:
-        charts.append(('half', _fig_html(_chart_run_history(df_runs))))
-
+    cmp_cards = []
     if df_cmp is not None and 'WMAE' in df_cmp.columns:
-        charts.append(('half', _fig_html(_chart_model_comparison(df_cmp))))
+        cmp_cards.append(_card('Model comparison by WMAE',
+                               'Lower is better · dark bar = selected model',
+                               _chart_model_comparison(df_cmp)))
         tt = _chart_train_time(df_cmp)
         if tt is not None:
-            charts.append(('half', _fig_html(tt)))
+            cmp_cards.append(_card('Training time', 'Accuracy vs compute-cost trade-off', tt))
+
+    # ---- Section 4: feature importance ----
+    fi_cards = []
     if feature_importance_df is not None and len(feature_importance_df):
-        charts.append(('full', _fig_html(_chart_feature_importance(feature_importance_df, best_model_name))))
+        fi_cards.append(_card(f'Top 15 feature importances ({best_model_name})',
+                              'Contribution of each feature to tree splits',
+                              _chart_feature_importance(feature_importance_df, best_model_name),
+                              size='full'))
 
-    chart_html = '\n'.join(
-        f'<div class="card{" full" if size == "full" else ""}">{html}</div>' for size, html in charts)
+    sections = [
+        f'''<div class="section-label">Test-set metrics</div>
+  <div class="kpis">{''.join(kpis)}</div>''',
+        _section('Experiment setup', config_card + split_card),
+        _section('Error diagnostics', ''.join(diag_cards)),
+    ]
+    if val_cards:
+        sections.append(_section('Validation & experiments', ''.join(val_cards)))
+    if cmp_cards:
+        sections.append(_section('Model comparison', ''.join(cmp_cards)))
+    if fi_cards:
+        sections.append(_section('Feature importance', ''.join(fi_cards)))
 
-    body = f'''
-  <div class="section-label">Test-set metrics</div>
-  <div class="kpis">{''.join(kpis)}</div>
-  <div class="section-label">Experiment setup</div>
-  <div class="grid">
-    {config_card}
-    {split_card}
-  </div>
-  <div class="section-label">Error diagnostics</div>
-  <div class="grid">
-    {chart_html}
-  </div>'''
+    body = '\n'.join(sections)
 
     footer = (f'Test window: {period} · {len(df):,} observations · 1-step-ahead forecast '
-              f'(uses previous week\'s lag) · Model comparison from the latest compare run '
-              f'(results/model_comparison.csv) · CV from validate.py (results/cv_results.csv)')
+              f'(uses previous week\'s lag) · Model comparison from the latest compare run · '
+              f'CV from validate.py')
 
     page = _page(
         title='Model Diagnostics — Data Science Report',
