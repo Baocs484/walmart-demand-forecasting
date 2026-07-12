@@ -17,6 +17,7 @@ from .inventory_report import generate_inventory_report
 from .report_builder import build_dashboard, build_excel_report, build_model_report
 from .persistence import save_artifacts
 from .run_history import log_run
+from .powerbi_export import export_powerbi_data
 
 # Import Models
 from .models.baseline_model import BaselineModel
@@ -197,6 +198,13 @@ class DemandForecastingSystem:
             inventory=inventory_data,
             comparison_results=self.comparison_results or None,
             feature_importance_df=feature_importance_df,
+        )
+
+        # --- BƯỚC 6b: XUẤT DATA LAYER CHO POWER BI ---
+        export_powerbi_data(
+            eval_data=self.last_eval_data,
+            inventory=inventory_data,
+            processed_data=self.processed_data,
         )
 
         # --- BƯỚC 7: GHI LỊCH SỬ RUN + LƯU PIPELINE ---

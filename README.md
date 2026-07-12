@@ -123,8 +123,9 @@ Fixed test window = last 15% of the timeline (Jun–Oct 2012), WMAE weighs holid
 | `results/model_report.html` | Data scientists | Model config + data split, residual distribution & residual-vs-level funnel, MAE by week, holiday vs regular error, CV per fold, run history, model comparison, feature importance |
 | `results/reports/forecast_report.xlsx` | Detailed analysis | 6 formatted sheets (headers, freeze panes, filters, conditional color scales): Overview, Model_Comparison, Store_Inventory, Restock_Priority, ABC_XYZ_All, Feature_Importance |
 | `streamlit run app.py` | Interactive demo | Network overview, store-dept explorer, on-demand recursive forecast with CSV download, filterable restock table, experiment history |
+| `results/powerbi/` + [build guide](docs/powerbi_guide.md) | Power BI users | Star-schema export (fact_forecast, fact_inventory, dim_store, dim_date) + ready-to-paste DAX measures + a step-by-step guide to a 3-page Power BI dashboard |
 
-Both HTML pages are fully self-contained (open offline, email-able) and cross-linked. Raw CSVs in `results/inventory/` feed Power BI / pandas directly.
+Both HTML pages are fully self-contained (open offline, email-able) and cross-linked.
 
 ## 🏗️ Project Structure
 
@@ -143,11 +144,13 @@ Both HTML pages are fully self-contained (open offline, email-able) and cross-li
 │   ├── metrics.py             # WMAE, MAE, RMSE, MAPE + business metrics
 │   ├── inventory_report.py    # ABC-XYZ safety stock + restock recommendations
 │   ├── report_builder.py      # Dashboard + model report + Excel builders
+│   ├── powerbi_export.py      # Star-schema CSV export + DAX measures for Power BI
 │   ├── persistence.py         # Pipeline save/load (joblib)
 │   ├── run_history.py         # Experiment tracking (runs.jsonl)
 │   ├── config.py              # config.yaml loader with defaults
 │   └── models/                # BaseModel + 7 implementations
 │
+├── docs/                      # Power BI build guide
 ├── tests/                     # 38 pytest tests (unit + integration)
 ├── .github/workflows/         # CI: pytest on every push/PR
 ├── data/{raw,processed}/      # Kaggle CSVs → merged walmart_clean.csv (gitignored)
