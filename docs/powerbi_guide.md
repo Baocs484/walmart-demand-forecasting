@@ -1,88 +1,95 @@
-# Power BI Dashboard — Build Guide
+# Hướng Dẫn Dựng Dashboard Power BI
 
-Build a 3-page Power BI dashboard from this project's exported data layer in
-about 30–60 minutes. The result mirrors `results/dashboard.html` but as a real
-Power BI report — a portfolio artifact in its own right.
+Dựng một dashboard Power BI 3 trang từ tầng dữ liệu do dự án xuất ra, mất khoảng
+30–60 phút. Kết quả tương đương `results/dashboard.html` nhưng là một report
+Power BI thật — một sản phẩm portfolio độc lập.
 
-**Prerequisite:** run `python main.py train` first. It exports the data layer to
+**Điều kiện:** chạy `python main.py train` trước. Lệnh này xuất tầng dữ liệu vào
 `results/powerbi/`:
 
-| File | Grain | Role |
+| File | Cấp độ chi tiết | Vai trò |
 |------|-------|------|
-| `fact_forecast.csv` | Store × Dept × Week | actual vs forecast + errors |
-| `fact_inventory.csv` | Store × Dept | ABC-XYZ policy, stockout, restock value |
-| `dim_store.csv` | Store | type, size, region, cluster |
-| `dim_date.csv` | Week | calendar attributes, holiday flag |
-| `measures.dax` | — | measures to paste (one per `New measure`) |
+| `fact_forecast.csv` | Store × Dept × Tuần | thực tế vs dự báo + sai số |
+| `fact_inventory.csv` | Store × Dept | chính sách ABC-XYZ, thiếu hàng, giá trị nhập |
+| `dim_store.csv` | Store | loại, quy mô, khu vực, cụm |
+| `dim_date.csv` | Tuần | thuộc tính lịch, cờ ngày lễ |
+| `measures.dax` | — | các công thức để dán (mỗi công thức 1 lần `New measure`) |
 
-## 1. Import & model (10 min)
+## 1. Nhập dữ liệu & dựng model (10 phút)
 
-> **⚠️ Non-English Windows (e.g. Vietnamese): fix the number locale FIRST.**
-> The CSVs use `.` as the decimal separator. On a Vietnamese/European locale
-> Power BI reads `16065.49` as **1,606,549** — every number becomes 100× too
-> large. Before anything else:
-> **File → Options and settings → Options → Current File → Regional
-> settings → Locale for import: English (United States)**.
-> If you already imported: in Power Query select the numeric columns
-> (`Actual_Sales`, `Forecast_Sales`, `Abs_Error`, `Error`, ...) → right-click →
-> **Change Type → Using Locale… → Decimal Number → English (United States)**.
-> Sanity check: the first `fact_forecast` row must show Actual_Sales ≈ 16,065.49.
+> **⚠️ Windows tiếng Việt: sửa định dạng số TRƯỚC TIÊN.**
+> File CSV dùng dấu **chấm** làm dấu thập phân. Với bản địa tiếng Việt/châu Âu,
+> Power BI sẽ đọc `16065.49` thành **1.606.549** — mọi con số bị phóng đại
+> gấp 100 lần. Trước khi làm gì khác:
+> **Tệp → Tùy chọn và cài đặt → Tùy chọn → Tệp hiện tại → Cài đặt khu vực →
+> Bản địa để nhập: English (United States)**.
+> Nếu đã lỡ nhập rồi: vào Power Query, chọn các cột số
+> (`Actual_Sales`, `Forecast_Sales`, `Abs_Error`, `Error`, ...) → chuột phải →
+> **Thay đổi loại → Sử dụng bản địa… → Số thập phân → English (United States)**.
+> Kiểm tra: dòng đầu tiên của `fact_forecast` phải hiện Actual_Sales ≈ 16,065.49.
 
-1. **Power BI Desktop → Get Data → Text/CSV** — import the four CSVs
-   (or *Get Data → Folder* pointed at `results/powerbi/`, then expand).
-2. In **Model view**, create relationships (all one-to-many, single direction).
-   In the dialog, **click the key column header in BOTH table previews yourself**
-   — Power BI sometimes preselects a wrong pair like `IsHoliday`↔`IsHoliday`,
-   which fails with a "duplicate values" error because it isn't unique:
+1. **Power BI Desktop → Get Data → Text/CSV** — nhập 4 file CSV
+   (hoặc *Get Data → Folder* trỏ vào `results/powerbi/` rồi mở rộng).
+2. Vào **Model view**, tạo các quan hệ (đều là một-nhiều, một chiều).
+   Trong hộp thoại, **tự tay bấm chọn cột khóa ở CẢ HAI bảng preview**
+   — Power BI đôi khi tự chọn nhầm cặp cột như `IsHoliday`↔`IsHoliday`,
+   dẫn đến lỗi "giá trị trùng lặp" vì cột đó không phải khóa duy nhất:
    - `dim_store[Store]` 1—* `fact_forecast[Store]`
    - `dim_store[Store]` 1—* `fact_inventory[Store]`
    - `dim_date[Date]` 1—* `fact_forecast[Date]`
-3. Mark `dim_date` as the **date table** (Table tools → Mark as date table).
-4. Open `measures.dax` in a text editor; for each measure: **Modeling → New
-   measure**, paste one block, Enter. Format the `%` measures as percentage,
-   the $ ones as currency (0 decimals).
 
-## 2. Page 1 — Executive Overview (15 min)
+   **Nếu không thấy nút Lưu ở cuối hộp thoại**: phóng to cửa sổ Power BI Desktop
+   hết cỡ, hoặc kéo giãn viền dưới/góc dưới-phải của hộp thoại; nếu vẫn không
+   thấy, nhấn phím **Enter** (thường kích hoạt nút mặc định); nếu vẫn không được,
+   thử giảm tỷ lệ hiển thị Windows (Settings → System → Display → Scale) xuống
+   100% rồi mở lại hộp thoại.
+3. Đánh dấu `dim_date` là **bảng ngày** (Table tools → Mark as date table).
+4. Mở `measures.dax` bằng trình soạn thảo văn bản; với mỗi công thức:
+   **Modeling → New measure**, dán từng khối, nhấn Enter. Định dạng các
+   measure `%` thành phần trăm, các measure `$` thành tiền tệ (0 chữ số
+   thập phân).
 
-| Element | Visual | Fields / notes |
+## 2. Trang 1 — Tổng Quan Điều Hành (15 phút)
+
+| Thành phần | Visual | Trường / ghi chú |
 |---------|--------|----------------|
-| KPI row | 5 Card visuals | `Total Actual`, `Forecast Accuracy %`, `Forecast Bias %`, `Avg Service Level %`, `Series Needing Restock` |
-| Trend | Line chart | X = `dim_date[Date]`, Y = `Total Actual` and `Total Forecast` — two lines. Optional: add `IsHoliday` to tooltips |
-| Store map/rank | Bar chart | X = `Total Actual`, Y = `dim_store[Store]`, sorted desc, top 10 filter |
-| Slicers (one row, top) | Slicer ×3 | `dim_store[Type]`, `dim_store[Cluster]`, `dim_date[Month_Name]` |
+| Hàng KPI | 5 Card visuals | `Total Actual`, `Forecast Accuracy %`, `Forecast Bias %`, `Avg Service Level %`, `Series Needing Restock` |
+| Xu hướng | Line chart | X = `dim_date[Date]`, Y = `Total Actual` và `Total Forecast` — 2 đường. Tùy chọn: thêm `IsHoliday` vào tooltip |
+| Xếp hạng cửa hàng | Bar chart | X = `Total Actual`, Y = `dim_store[Store]`, sắp giảm dần, lọc top 10 |
+| Bộ lọc (1 hàng, trên cùng) | Slicer ×3 | `dim_store[Type]`, `dim_store[Cluster]`, `dim_date[Month_Name]` |
 
-Design tips that make it look professional: one accent color (`#2A78D6`) for
-actuals, a muted second color for forecast; titles in sentence case; remove
-gridline clutter (Format → Gridlines off); left-align page title text box.
+Mẹo thiết kế cho trông chuyên nghiệp: dùng 1 màu nhấn (`#2A78D6`) cho số liệu
+thực tế, 1 màu phụ nhạt hơn cho dự báo; tiêu đề viết hoa chữ đầu câu; tắt
+gridline gây rối (Format → Gridlines off); căn trái ô văn bản tiêu đề trang.
 
-## 3. Page 2 — Forecast Accuracy (10 min)
+## 3. Trang 2 — Độ Chính Xác Dự Báo (10 phút)
 
-| Element | Visual | Fields |
+| Thành phần | Visual | Trường |
 |---------|--------|--------|
-| Error by week | Column chart | X = `Date`, Y = `MAE`. Holiday weeks stand out if you add `dim_date[IsHoliday]` to Legend |
-| Error by department | Bar chart (top N) | Y = `fact_forecast[Dept]`, X = `Total Abs Error`, Top N = 10 |
-| Holiday vs regular | Clustered column | X = `fact_forecast[IsHoliday]`, Y = `MAE` |
-| Scatter | Scatter chart | X = `Total Actual`, Y = `Total Forecast`, Details = `Store` — dots below the diagonal are under-forecast stores |
+| Sai số theo tuần | Column chart | X = `Date`, Y = `MAE`. Tuần lễ sẽ nổi bật nếu thêm `dim_date[IsHoliday]` vào Legend |
+| Sai số theo phòng ban | Bar chart (top N) | Y = `fact_forecast[Dept]`, X = `Total Abs Error`, Top N = 10 |
+| Tuần lễ vs tuần thường | Clustered column | X = `fact_forecast[IsHoliday]`, Y = `MAE` |
+| Scatter | Scatter chart | X = `Total Actual`, Y = `Total Forecast`, Details = `Store` — điểm dưới đường chéo là cửa hàng bị dự báo thiếu |
 
-## 4. Page 3 — Inventory Actions (10 min)
+## 4. Trang 3 — Hành Động Tồn Kho (10 phút)
 
-| Element | Visual | Fields |
+| Thành phần | Visual | Trường |
 |---------|--------|--------|
-| ABC-XYZ matrix | Matrix visual | Rows = `ABC`, Columns = `XYZ`, Values = count of Store + `Total Restock Value` |
-| Priority table | Table | Store, Dept, `ABC_XYZ`, `Stockout_Rate`, `Service_Level`, `Restock_Value`; filter `Restock_Recommended = 1`; conditional formatting (data bars) on `Stockout_Rate` |
-| KPI row | Cards | `Series Needing Restock`, `Total Restock Value`, `Avg Stockout Rate %` |
+| Ma trận ABC-XYZ | Matrix visual | Rows = `ABC`, Columns = `XYZ`, Values = đếm Store + `Total Restock Value` |
+| Bảng ưu tiên | Table | Store, Dept, `ABC_XYZ`, `Stockout_Rate`, `Service_Level`, `Restock_Value`; lọc `Restock_Recommended = 1`; định dạng có điều kiện (data bars) trên `Stockout_Rate` |
+| Hàng KPI | Cards | `Series Needing Restock`, `Total Restock Value`, `Avg Stockout Rate %` |
 
-## 5. Finish
+## 5. Hoàn thiện
 
-- **File → Save as** `powerbi/walmart_forecasting.pbix` (folder is gitignored
-  except the .pbix if you choose to commit it — it's typically a few MB).
-- Take a screenshot of Page 1 for the README / your CV.
-- Optional: publish to Power BI Service (free tier) and add the public link
-  to the README.
+- **File → Save as** `powerbi/walmart_forecasting.pbix` (thư mục này đã bị
+  gitignore, trừ khi bạn chủ động commit file .pbix — thường nặng vài MB).
+- Chụp màn hình Trang 1 để đưa vào README / CV.
+- Tùy chọn: publish lên Power BI Service (gói miễn phí) và gắn link công khai
+  vào README.
 
-## Notes
+## Ghi chú
 
-- All values are **dollars** — the dataset has no unit prices.
-- `WMAE` here matches the project's primary metric (holiday weeks ×5).
-- Re-running `python main.py train` refreshes the CSVs; hit **Refresh** in
-  Power BI to pull the new data.
+- Toàn bộ giá trị là **đô la ($)** — dataset gốc không có giá đơn vị sản phẩm.
+- `WMAE` ở đây khớp với metric chính của dự án (tuần lễ trọng số ×5).
+- Chạy lại `python main.py train` sẽ làm mới các file CSV; bấm **Refresh**
+  trong Power BI để lấy dữ liệu mới.
