@@ -17,9 +17,23 @@ Power BI report — a portfolio artifact in its own right.
 
 ## 1. Import & model (10 min)
 
+> **⚠️ Non-English Windows (e.g. Vietnamese): fix the number locale FIRST.**
+> The CSVs use `.` as the decimal separator. On a Vietnamese/European locale
+> Power BI reads `16065.49` as **1,606,549** — every number becomes 100× too
+> large. Before anything else:
+> **File → Options and settings → Options → Current File → Regional
+> settings → Locale for import: English (United States)**.
+> If you already imported: in Power Query select the numeric columns
+> (`Actual_Sales`, `Forecast_Sales`, `Abs_Error`, `Error`, ...) → right-click →
+> **Change Type → Using Locale… → Decimal Number → English (United States)**.
+> Sanity check: the first `fact_forecast` row must show Actual_Sales ≈ 16,065.49.
+
 1. **Power BI Desktop → Get Data → Text/CSV** — import the four CSVs
    (or *Get Data → Folder* pointed at `results/powerbi/`, then expand).
-2. In **Model view**, create relationships (all one-to-many, single direction):
+2. In **Model view**, create relationships (all one-to-many, single direction).
+   In the dialog, **click the key column header in BOTH table previews yourself**
+   — Power BI sometimes preselects a wrong pair like `IsHoliday`↔`IsHoliday`,
+   which fails with a "duplicate values" error because it isn't unique:
    - `dim_store[Store]` 1—* `fact_forecast[Store]`
    - `dim_store[Store]` 1—* `fact_inventory[Store]`
    - `dim_date[Date]` 1—* `fact_forecast[Date]`
