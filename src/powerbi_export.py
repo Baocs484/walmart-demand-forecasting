@@ -84,7 +84,13 @@ def export_powerbi_data(eval_data, inventory=None, processed_data=None):
             dim_store.to_csv(OUT_DIR / 'dim_store.csv', index=False)
 
         # ---------- dim_date ----------
-        dates = pd.DataFrame({'Date': sorted(fact['Date'].unique())})
+        # Power BI's "Mark as date table" requires EVERY calendar day present
+        # (no gaps) between min and max - fact_forecast only has one row per
+        # week (Fridays), so a full daily range is generated here and the
+        # one-to-many relationship still works: each weekly fact row matches
+        # its single corresponding day in this daily calendar.
+        full_range = pd.date_range(fact['Date'].min(), fact['Date'].max(), freq='D')
+        dates = pd.DataFrame({'Date': full_range})
         dates['Year'] = dates['Date'].dt.year
         dates['Month'] = dates['Date'].dt.month
         dates['Month_Name'] = dates['Date'].dt.strftime('%b')

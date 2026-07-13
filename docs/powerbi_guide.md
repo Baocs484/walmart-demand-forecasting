@@ -12,7 +12,7 @@ Power BI thật — một sản phẩm portfolio độc lập.
 | `fact_forecast.csv` | Store × Dept × Tuần | thực tế vs dự báo + sai số |
 | `fact_inventory.csv` | Store × Dept | chính sách ABC-XYZ, thiếu hàng, giá trị nhập |
 | `dim_store.csv` | Store | loại, quy mô, khu vực, cụm |
-| `dim_date.csv` | Tuần | thuộc tính lịch, cờ ngày lễ |
+| `dim_date.csv` | Ngày (lịch đầy đủ, không thiếu ngày nào) | thuộc tính lịch, cờ ngày lễ |
 | `measures.dax` | — | các công thức để dán (mỗi công thức 1 lần `New measure`) |
 
 ## 1. Nhập dữ liệu & dựng model (10 phút)
@@ -43,7 +43,13 @@ Power BI thật — một sản phẩm portfolio độc lập.
    thấy, nhấn phím **Enter** (thường kích hoạt nút mặc định); nếu vẫn không được,
    thử giảm tỷ lệ hiển thị Windows (Settings → System → Display → Scale) xuống
    100% rồi mở lại hộp thoại.
-3. Đánh dấu `dim_date` là **bảng ngày** (Table tools → Mark as date table).
+3. Đánh dấu `dim_date` là **bảng ngày**: chuột phải vào `dim_date` trong khung
+   Dữ liệu → **Đánh dấu là bảng ngày** → Bật → chọn cột **Date** → **Lưu**.
+   `dim_date` chứa **đủ mọi ngày trong lịch** (không chỉ các thứ Sáu có dữ
+   liệu bán hàng) vì Power BI yêu cầu bảng ngày phải liên tục, không có
+   khoảng trống — nên sẽ có nhiều dòng hơn `fact_forecast`, điều đó là
+   bình thường. Nếu vẫn báo lỗi "có khoảng trống", chạy lại
+   `python main.py train` để lấy `dim_date.csv` bản mới nhất.
 4. Mở `measures.dax` bằng trình soạn thảo văn bản; với mỗi công thức:
    **Modeling → New measure**, dán từng khối, nhấn Enter. Định dạng các
    measure `%` thành phần trăm, các measure `$` thành tiền tệ (0 chữ số
