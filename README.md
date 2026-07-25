@@ -129,19 +129,11 @@ Both HTML pages are fully self-contained (open offline, email-able) and cross-li
 
 ## 📈 Power BI Dashboard
 
-A 3-page Power BI report built on the star-schema export in `results/powerbi/`
-(`fact_forecast`, `fact_inventory`, `dim_store`, `dim_date` + ready-to-paste DAX
-measures in `measures.dax`). Open the finished file directly —
-[`powerbi/walmart_forecasting.pbix`](powerbi/walmart_forecasting.pbix) — or
-follow [`docs/powerbi_guide.md`](docs/powerbi_guide.md) to rebuild it from
-scratch (~30–60 min, includes troubleshooting for two real Power BI Desktop
-gotchas hit while building this: import locale on non-English Windows, and
-the "Mark as date table" gap-free-calendar requirement).
-
-<!-- TODO: replace with real screenshots — see README update instructions -->
-<!-- ![Executive Overview](docs/screenshots/page1_overview.png) -->
-<!-- ![Forecast Accuracy](docs/screenshots/page2_accuracy.png) -->
-<!-- ![Inventory Actions](docs/screenshots/page3_inventory.png) -->
+A 3-page Power BI report built by hand in Power BI Desktop on the star-schema
+export in `results/powerbi/` (`fact_forecast`, `fact_inventory`, `dim_store`,
+`dim_date` + ready-to-paste DAX measures in `measures.dax`, regenerated on
+every training run). Open the finished file directly:
+[`powerbi/walmart_forecasting.pbix`](powerbi/walmart_forecasting.pbix).
 
 **Page 1 — Executive Overview**: 5 KPI cards (Total Actual ~$1B, Forecast
 Accuracy 91.75%, Forecast Bias +1.10%, Avg Service Level 95.70%, Series
@@ -157,9 +149,6 @@ on the diagonal, visually confirming the ~92% accuracy number.
 (count of series + total restock value per cell), and the 44-row restock
 priority table (Store, Dept, ABC/XYZ class, stockout rate, service level,
 restock value) filtered to `Restock_Recommended = 1`.
-
-Built by hand in Power BI Desktop following the guide above — including
-fixing the two real gotchas it now documents.
 
 ## 🏗️ Project Structure
 
@@ -184,7 +173,6 @@ fixing the two real gotchas it now documents.
 │   ├── config.py              # config.yaml loader with defaults
 │   └── models/                # BaseModel + 7 implementations
 │
-├── docs/                      # Power BI build guide
 ├── powerbi/
 │   └── walmart_forecasting.pbix   # Finished 3-page Power BI report
 ├── tests/                     # 38 pytest tests (unit + integration)

@@ -8,9 +8,15 @@ Power BI data layer - exports a small star schema into results/powerbi/:
     dim_date.csv         calendar attributes for the test window
     measures.dax         ready-to-paste DAX measures
 
-Import the whole folder in Power BI Desktop (Get Data -> Folder, or each CSV),
-create the relationships described in docs/powerbi_guide.md, paste the
-measures, and build visuals - see the guide for a 3-page layout.
+Import the CSVs in Power BI Desktop, relate dim_store[Store] and
+dim_date[Date] to the fact tables (one-to-many), paste the measures, and
+build visuals. The finished report lives at powerbi/walmart_forecasting.pbix.
+
+Two gotchas hit on real Power BI Desktop builds:
+- Non-English Windows locales read "16065.49" as 1,606,549 - set
+  "Locale for import" to English (US) before importing.
+- "Mark as date table" requires a gap-free calendar, which is why dim_date
+  contains every calendar day rather than only the weekly Fridays.
 """
 
 import numpy as np
@@ -104,7 +110,7 @@ def export_powerbi_data(eval_data, inventory=None, processed_data=None):
         (OUT_DIR / 'measures.dax').write_text(DAX_MEASURES, encoding='utf-8')
 
         logger.info(f'  ✓ Power BI data layer exported: {OUT_DIR}/ '
-                    f'({len(fact):,} forecast rows) - see docs/powerbi_guide.md')
+                    f'({len(fact):,} forecast rows)')
         return str(OUT_DIR)
     except Exception as e:
         logger.warning(f'Power BI export failed (non-fatal): {e}')
