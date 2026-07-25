@@ -14,7 +14,7 @@ Built as a portfolio project demonstrating both **data science** (leak-free feat
 - **Metric-aligned training** — holiday sample weights (×5), L1 objectives, early stopping on a time-based validation split
 - **Rolling-origin cross-validation** — 4 time folds including the Thanksgiving/Christmas window, because a single test window understates holiday difficulty (it does: 2.2×)
 - **Recursive multi-week forecasting** — predicts week t+1, feeds it back as a lag, iterates up to 8 weeks into the future
-- **Four report surfaces** — analyst dashboard (HTML), model-diagnostics report (HTML), formatted Excel workbook, interactive Streamlit app
+- **Five report surfaces** — analyst dashboard (HTML), model-diagnostics report (HTML), formatted Excel workbook, interactive Streamlit app, and a hand-built **3-page Power BI dashboard** on a proper star schema
 - **Engineering hygiene** — 38 tests, config-driven parameters, saved pipeline artifacts, experiment tracking, GitHub Actions CI
 
 ## 🎯 The Problem
@@ -123,9 +123,43 @@ Fixed test window = last 15% of the timeline (Jun–Oct 2012), WMAE weighs holid
 | `results/model_report.html` | Data scientists | Model config + data split, residual distribution & residual-vs-level funnel, MAE by week, holiday vs regular error, CV per fold, run history, model comparison, feature importance |
 | `results/reports/forecast_report.xlsx` | Detailed analysis | 6 formatted sheets (headers, freeze panes, filters, conditional color scales): Overview, Model_Comparison, Store_Inventory, Restock_Priority, ABC_XYZ_All, Feature_Importance |
 | `streamlit run app.py` | Interactive demo | Network overview, store-dept explorer, on-demand recursive forecast with CSV download, filterable restock table, experiment history |
-| `results/powerbi/` + [build guide](docs/powerbi_guide.md) | Power BI users | Star-schema export (fact_forecast, fact_inventory, dim_store, dim_date) + ready-to-paste DAX measures + a step-by-step guide to a 3-page Power BI dashboard |
+| [`powerbi/walmart_forecasting.pbix`](powerbi/walmart_forecasting.pbix) | Power BI users | 3-page report built on a star schema — see below |
 
 Both HTML pages are fully self-contained (open offline, email-able) and cross-linked.
+
+## 📈 Power BI Dashboard
+
+A 3-page Power BI report built on the star-schema export in `results/powerbi/`
+(`fact_forecast`, `fact_inventory`, `dim_store`, `dim_date` + ready-to-paste DAX
+measures in `measures.dax`). Open the finished file directly —
+[`powerbi/walmart_forecasting.pbix`](powerbi/walmart_forecasting.pbix) — or
+follow [`docs/powerbi_guide.md`](docs/powerbi_guide.md) to rebuild it from
+scratch (~30–60 min, includes troubleshooting for two real Power BI Desktop
+gotchas hit while building this: import locale on non-English Windows, and
+the "Mark as date table" gap-free-calendar requirement).
+
+<!-- TODO: replace with real screenshots — see README update instructions -->
+<!-- ![Executive Overview](docs/screenshots/page1_overview.png) -->
+<!-- ![Forecast Accuracy](docs/screenshots/page2_accuracy.png) -->
+<!-- ![Inventory Actions](docs/screenshots/page3_inventory.png) -->
+
+**Page 1 — Executive Overview**: 5 KPI cards (Total Actual ~$1B, Forecast
+Accuracy 91.75%, Forecast Bias +1.10%, Avg Service Level 95.70%, Series
+Needing Restock 44), a slicer row (Type / Month / Cluster), an actual-vs-forecast
+trend line, and a top-10 stores bar chart.
+
+**Page 2 — Forecast Accuracy**: error by department (top 10, led by Dept 38 at
+$6.5M total absolute error), MAE by holiday vs. regular week, MAE by test
+week, and a forecast-vs-actual scatter colored by store — points sit tightly
+on the diagonal, visually confirming the ~92% accuracy number.
+
+**Page 3 — Inventory Actions**: the 3 inventory KPIs, an ABC × XYZ matrix
+(count of series + total restock value per cell), and the 44-row restock
+priority table (Store, Dept, ABC/XYZ class, stockout rate, service level,
+restock value) filtered to `Restock_Recommended = 1`.
+
+Built by hand in Power BI Desktop following the guide above — including
+fixing the two real gotchas it now documents.
 
 ## 🏗️ Project Structure
 
@@ -151,11 +185,13 @@ Both HTML pages are fully self-contained (open offline, email-able) and cross-li
 │   └── models/                # BaseModel + 7 implementations
 │
 ├── docs/                      # Power BI build guide
+├── powerbi/
+│   └── walmart_forecasting.pbix   # Finished 3-page Power BI report
 ├── tests/                     # 38 pytest tests (unit + integration)
 ├── .github/workflows/         # CI: pytest on every push/PR
 ├── data/{raw,processed}/      # Kaggle CSVs → merged walmart_clean.csv (gitignored)
 ├── models/                    # Saved pipeline artifacts (gitignored)
-└── results/                   # Generated reports (gitignored)
+└── results/                   # Generated reports (gitignored, incl. results/powerbi/ CSV export)
 ```
 
 ## 🚀 Quickstart
@@ -194,4 +230,4 @@ Business parameters (split ratios, holiday weight, service-level z-scores, lead 
 ## 📝 Credits
 
 - Dataset: [Walmart Store Sales Forecasting (Kaggle)](https://www.kaggle.com/c/walmart-recruiting-store-sales-forecasting)
-- Authors: Lê Gia Bảo
+- Authors: Lê Gia Bảo — pipeline, models, reports, and the Power BI dashboard (built end-to-end in Power BI Desktop)
