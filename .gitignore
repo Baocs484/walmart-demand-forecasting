@@ -49,6 +49,7 @@ results/runs.jsonl
 results/dashboard.html
 results/model_report.html
 results/reports/*.xlsx
+results/powerbi/
 
 # Jupyter
 .ipynb_checkpoints/
